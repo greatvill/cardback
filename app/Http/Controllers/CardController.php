@@ -101,88 +101,18 @@ class CardController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Card  $card
-     * @return \Illuminate\Http\Response
+     * @param Card $card
+     * @return Card
      */
     public function show(Card $card)
     {
-
-        return view('cards.show', ['card' => $card]);
-
-        // define vcard
-        $vcard = new VCard();
-
-        // define variables
-        $lastname = 'Шадаев';
-        $firstname = 'Руслан';
-        $company = 'Prodbysection';
-        $jobTitle = 'CEO';
-        $email = "rushadaev@gmail.com";
-        $phone = '+7 (999) 9772124';
-        $addressName = 'Работа';
-        $addressExtended = 'Секция';
-        $street = 'Газетный переулок';
-        $city = 'Москва';
-        $region = 'Москва';
-        $zip = '125009';
-        $country = 'Россия';
-        $additional = '';
-        $prefix = '';
-        $suffix = '';
-        $urls = collect(
-            [
-                [
-                    'type' => 'Сайт',
-                    'value' => 'http://prodbysection.com/',
-                ],
-                [
-                    'type' => 'Вконтакте',
-                    'value' => 'https://vk.com/shadaev',
-                ]
-            ]
-        );
-
-        // add personal data
-        $vcard->addName($lastname, $firstname, $additional, $prefix, $suffix);
-
-        // add work data
-        $vcard->addCompany($company);
-        $vcard->addJobtitle($jobTitle);
-
-        $vcard->addEmail($email);
-        $vcard->addPhoneNumber($phone);
-
-        $vcard->addAddress($addressName, $addressExtended, $street, $city, $region, $zip, $country);
-
-        foreach($urls as $url)
-        {
-            $url = collect($url);
-
-            $vcard->addURL($url->get('value'), 'TYPE='.$url->get('type'));
-        }
-
-        $imageWidth = '150';
-
-        $imgUrl = 'http://www.gravatar.com/avatar/'.md5($email).'fs='.$imageWidth;
-        $vcard->addPhoto($imgUrl);
-
-        // return vcard as a string
-        //return $vcard->getOutput();
-
-        // return vcard as a download
-        return $vcard->download();
-
-        // save vcard on disk
-        //$vcard->setSavePath('/path/to/directory');
-        //$vcard->save();
-
-
+        return $card;
     }
 
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\Card  $card
+     * @param Card $card
      * @return \Illuminate\Http\Response
      */
     public function edit(Card $card)
@@ -194,7 +124,7 @@ class CardController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Card  $card
+     * @param Card $card
      * @return \Illuminate\Http\Response
      */
     public function actionUpdate(Request $request, $number)

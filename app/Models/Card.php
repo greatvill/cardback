@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $number
  * @property int $user_id
- * @property string $data
+ * @property array $data
  * @property string|null $card_url
  * @property int $views
  * @property \Illuminate\Support\Carbon|null $created_at

@@ -20,7 +20,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 
-Route::get('/card', 'CardController@show');
+Route::get('/cards/{card}', 'CardController@show');
 Route::get('/cardtest', 'CardController@showtest');
 Route::post('/cards/store', 'CardController@store')->name('storeCard');
 Route::get('/cards/check/{number}', [CardController::class, 'actionCheckByNumber']);
