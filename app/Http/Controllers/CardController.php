@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Hash;
+use Illuminate\Validation\ValidationException;
 use JeroenDesloovere\VCard\VCard;
 use App\Models\Card;
 use Auth;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class CardController extends Controller
 {
@@ -18,14 +21,14 @@ class CardController extends Controller
     {
         //
     }
-    
+
     public function showtest(){
         return collect([
             'id' => 13,
             'name' => 'ruslan',
         ]);
     }
-    
+
     public function welcome(){
         $user = Auth::user();
         $cards = Card::where('user_id', $user->id)->get();
@@ -50,20 +53,18 @@ class CardController extends Controller
      */
     public function store(Request $request)
     {
-        $request->id;
-        
         $card = Card::create([
-            'user_id' => $user->id,
-            'data' => json_encode($request->all()),
+            'user_id' => $request->get('user_id'),
+            'data' => $request->get('data'),
         ]);
         return $card;
     }
-    
+
     public function download(Card $card)
     {
         $user = Auth::user();
-        
-        
+
+
         $data = $card->data;
         $vcard = new VCard();
         $lastname = $data['lastname'];
@@ -83,7 +84,7 @@ class CardController extends Controller
         $additional = '';
         $prefix = '';
         $suffix = '';
-        
+
         $vcard->addName($lastname, $firstname, $additional, $prefix, $suffix);
         $vcard->addCompany($company);
         $vcard->addJobtitle($jobTitle);
@@ -91,7 +92,7 @@ class CardController extends Controller
         $vcard->addPhoneNumber($phone);
         $vcard->addAddress($addressName, $addressExtended, $street, $city, $region, $zip, $country);
         $vcard->addURL($url->value, 'TYPE='.$url->type);
-        $imageWidth = '150'; 
+        $imageWidth = '150';
         $imgUrl = 'http://www.gravatar.com/avatar/'.md5($email).'fs='.$imageWidth;
         $vcard->addPhoto($imgUrl);
         $vcard->download();
@@ -105,12 +106,12 @@ class CardController extends Controller
      */
     public function show(Card $card)
     {
-      
+
         return view('cards.show', ['card' => $card]);
-        
+
         // define vcard
         $vcard = new VCard();
-        
+
         // define variables
         $lastname = 'Шадаев';
         $firstname = 'Руслан';
@@ -140,42 +141,42 @@ class CardController extends Controller
                 ]
             ]
         );
-        
+
         // add personal data
         $vcard->addName($lastname, $firstname, $additional, $prefix, $suffix);
-        
+
         // add work data
         $vcard->addCompany($company);
         $vcard->addJobtitle($jobTitle);
 
         $vcard->addEmail($email);
         $vcard->addPhoneNumber($phone);
-        
+
         $vcard->addAddress($addressName, $addressExtended, $street, $city, $region, $zip, $country);
-        
+
         foreach($urls as $url)
         {
             $url = collect($url);
-           
+
             $vcard->addURL($url->get('value'), 'TYPE='.$url->get('type'));
         }
-        
-        $imageWidth = '150'; 
-        
+
+        $imageWidth = '150';
+
         $imgUrl = 'http://www.gravatar.com/avatar/'.md5($email).'fs='.$imageWidth;
         $vcard->addPhoto($imgUrl);
-        
+
         // return vcard as a string
         //return $vcard->getOutput();
-        
+
         // return vcard as a download
         return $vcard->download();
-        
+
         // save vcard on disk
         //$vcard->setSavePath('/path/to/directory');
         //$vcard->save();
 
-        
+
     }
 
     /**
@@ -196,21 +197,96 @@ class CardController extends Controller
      * @param  \App\Models\Card  $card
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Card $card)
+    public function actionUpdate(Request $request, $number)
     {
-        $card->data = json_encode($request->all());
-        $card->save();
-        return redirect()->route('dashboard');
+        try {
+            $params = $request->validate([
+                'password' => 'required',
+                'data' => 'required|array',
+            ]);
+        } catch (ValidationException $exception) {
+            return response(status: Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $card = Card::whereNumber($number)->first();
+        if (!$card) {
+            return response(['code_response' => 'card_not_found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (Hash::check($params['password'], $card->password)) {
+            $card->data = $params['data'];
+            $card->save();
+            return response([
+                'code_response' => 'json_update_success',
+                'card' => $card->data,
+            ]);
+        }
+
+        return response([
+            'code_response' => 'json_update_failure',
+        ], Response::HTTP_FORBIDDEN);
+
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Card  $card
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Card $card)
+    public function actionCheckByNumber($number)
     {
-        //
+        $card = Card::whereNumber($number)->first();
+        if (!$card) {
+            return response(['code_response' => 'card_not_found'], Response::HTTP_NOT_FOUND);
+        }
+        if (!$card->password) {
+            return response(['code_response' => 'no_password']);
+        }
+        return response(['code_response' => 'has_password']);
+    }
+
+    public function actionSetPassword($number, Request $request)
+    {
+        try {
+            $params = $request->validate([
+                'password' => 'required'
+            ]);
+        } catch (ValidationException $exception) {
+            return response(status: Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $card = Card::whereNumber($number)->first();
+        if (!$card) {
+            return response(['code_response' => 'card_not_found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $card->password = Hash::make($params['password']);
+        $card->save();
+        return response([
+            'code_response' => 'password_set_success',
+            'card' => $card->data,
+        ]);
+    }
+
+    public function actionGetData($number, Request $request)
+    {
+        try {
+            $params = $request->validate([
+                'password' => 'required'
+            ]);
+        } catch (ValidationException $exception) {
+            return response(status: Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $card = Card::whereNumber($number)->first();
+        if (!$card) {
+            return response(['code_response' => 'card_not_found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if (Hash::check($params['password'], $card->password)) {
+            return response([
+                'code_response' => 'password_check_success',
+                'card' => $card->data,
+            ]);
+        }
+
+        return response([
+            'code_response' => 'password_check_failure',
+        ], Response::HTTP_FORBIDDEN);
     }
 }

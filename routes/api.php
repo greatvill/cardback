@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -22,3 +23,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::get('/card', 'CardController@show');
 Route::get('/cardtest', 'CardController@showtest');
 Route::post('/cards/store', 'CardController@store')->name('storeCard');
+Route::get('/cards/check/{number}', [CardController::class, 'actionCheckByNumber']);
+Route::post('/cards/set-password/{number}', [CardController::class, 'actionSetPassword']);
+Route::post('/cards/get-data/{number}', [CardController::class, 'actionGetData']);
+Route::post('/cards/update/{number}', [CardController::class, 'actionUpdate']);
